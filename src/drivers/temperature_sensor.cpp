@@ -44,6 +44,21 @@ Status TemperatureSensor::init() {
     st = bus_.writeReg(addr_, RESET_REG, &rst, 1U);
     if (st != Status::Ok) { return st; }
 
+    // Wait for NVM copy to complete (STATUS[0] = im_update must be 0)
+    // BME280 NVM copy completes within 2 ms after reset (datasheet §4.1);
+    // 10 retries is a bounded safety guard for the polling loop.
+    {
+        constexpr int k_maxRetries = 10;
+        bool nvm_ready = false;
+        for (int i = 0; i < k_maxRetries; ++i) {
+            uint8_t s = 0U;
+            st = bus_.readReg(addr_, STATUS_REG, &s, 1U);
+            if (st != Status::Ok) { return st; }
+            if ((s & 0x01U) == 0U) { nvm_ready = true; break; }
+        }
+        if (!nvm_ready) { return Status::Timeout; }
+    }
+
     // 3. Read calibration data
     st = readCalibration();
     if (st != Status::Ok) { return st; }
@@ -192,14 +207,22 @@ Status TemperatureSensor::readCalibration() {
 
     calib_.dig_H2 = parseS16(hb, 0U);
     calib_.dig_H3 = hb[2];
-    // dig_H4: upper 8 bits from 0xE4, lower 4 bits from 0xE5[3:0]
-    calib_.dig_H4 = static_cast<int16_t>(
-        (static_cast<int16_t>(hb[3]) << 4) |
-        static_cast<int16_t>(hb[4] & 0x0FU));
-    // dig_H5: lower 4 bits from 0xE5[7:4], upper 8 bits from 0xE6
-    calib_.dig_H5 = static_cast<int16_t>(
-        (static_cast<int16_t>(hb[5]) << 4) |
-        static_cast<int16_t>(hb[4] >> 4U));
+    // dig_H4: upper 8 bits from 0xE4, lower 4 bits from 0xE5[3:0] (12-bit signed)
+    {
+        uint16_t h4 = static_cast<uint16_t>(
+            (static_cast<uint16_t>(hb[3]) << 4U) |
+            static_cast<uint16_t>(hb[4] & 0x0FU));
+        if ((h4 & 0x0800U) != 0U) { h4 |= 0xF000U; }
+        calib_.dig_H4 = static_cast<int16_t>(h4);
+    }
+    // dig_H5: lower 4 bits from 0xE5[7:4], upper 8 bits from 0xE6 (12-bit signed)
+    {
+        uint16_t h5 = static_cast<uint16_t>(
+            (static_cast<uint16_t>(hb[5]) << 4U) |
+            static_cast<uint16_t>(hb[4] >> 4U));
+        if ((h5 & 0x0800U) != 0U) { h5 |= 0xF000U; }
+        calib_.dig_H5 = static_cast<int16_t>(h5);
+    }
     calib_.dig_H6 = static_cast<int8_t>(hb[6]);
 
     return Status::Ok;

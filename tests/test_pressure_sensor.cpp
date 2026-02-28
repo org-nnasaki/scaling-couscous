@@ -33,13 +33,13 @@ protected:
 
     // Reference calibration (same T1-T3/P1-P9 layout as BMP280 spec)
     // dig_T1=27504, dig_T2=26435, dig_T3=-1000,
-    // dig_P1=36477, dig_P2=-10685, others zeroed
+    // dig_P1=36477, dig_P2=-10749, others zeroed
     static constexpr uint8_t k_calib[24] = {
         0x70U, 0x6BU,  // T1 = 27504
         0x43U, 0x67U,  // T2 = 26435
         0x18U, 0xFCU,  // T3 = -1000
         0x7DU, 0x8EU,  // P1 = 36477
-        0x03U, 0xD6U,  // P2 = -10685
+        0x03U, 0xD6U,  // P2 = -10749
         0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U,
         0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U,
         0x00U, 0x00U
@@ -56,6 +56,14 @@ protected:
     void expectSoftReset() {
         EXPECT_CALL(mock_, writeReg(ADDR, PressureSensor::RESET_REG, _, 1U))
             .WillOnce(Return(Status::Ok));
+    }
+
+    void expectStatusReady() {
+        EXPECT_CALL(mock_, readReg(ADDR, PressureSensor::STATUS_REG, _, 1U))
+            .WillOnce([](uint8_t, uint8_t, uint8_t* buf, size_t) {
+                buf[0] = 0x00U; // im_update = 0, NVM copy done
+                return Status::Ok;
+            });
     }
 
     void expectCalibrationRead() {
@@ -80,6 +88,7 @@ protected:
     void initSuccessfully() {
         expectChipIdRead();
         expectSoftReset();
+        expectStatusReady();
         expectCalibrationRead();
         expectConfigWrite();
         expectCtrlMeasWrite();
@@ -155,6 +164,13 @@ TEST_F(PressureSensorTest, ReadPressure_BeforeInit_ReturnsNotInitialized) {
 TEST_F(PressureSensorTest, ReadTemperature_Success_ReturnsReasonableValue) {
     initSuccessfully();
 
+    // STATUS: not measuring
+    EXPECT_CALL(mock_, readReg(ADDR, PressureSensor::STATUS_REG, _, 1U))
+        .WillOnce([](uint8_t, uint8_t, uint8_t* buf, size_t) {
+            buf[0] = 0x00U;
+            return Status::Ok;
+        });
+
     // Same raw temp bytes as temperature sensor test
     uint8_t raw[3] = {0x7EU, 0xC6U, 0x00U};
     EXPECT_CALL(mock_, readReg(ADDR, 0xFAU, _, 3U))
@@ -171,6 +187,13 @@ TEST_F(PressureSensorTest, ReadTemperature_Success_ReturnsReasonableValue) {
 
 TEST_F(PressureSensorTest, ReadBoth_Success_ReturnsBothValues) {
     initSuccessfully();
+
+    // STATUS: not measuring
+    EXPECT_CALL(mock_, readReg(ADDR, PressureSensor::STATUS_REG, _, 1U))
+        .WillOnce([](uint8_t, uint8_t, uint8_t* buf, size_t) {
+            buf[0] = 0x00U;
+            return Status::Ok;
+        });
 
     uint8_t raw[6] = {
         0x51U, 0x5DU, 0x00U,  // press

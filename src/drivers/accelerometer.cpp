@@ -92,10 +92,13 @@ Status Accelerometer::readAcceleration(float& x, float& y, float& z) {
 }
 
 Status Accelerometer::setRange(Range range) {
-    range_ = range;
     uint8_t fmt = static_cast<uint8_t>(FULL_RES_BIT |
-                                       static_cast<uint8_t>(range_));
-    return bus_.writeReg(DATA_FORMAT_REG, &fmt, 1U);
+                                       static_cast<uint8_t>(range));
+    Status st = bus_.writeReg(DATA_FORMAT_REG, &fmt, 1U);
+    if (st == Status::Ok) {
+        range_ = range;
+    }
+    return st;
 }
 
 // ── Private helpers ───────────────────────────────────────────────────────

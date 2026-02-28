@@ -172,7 +172,7 @@ const CalibrationData& calibration() const;
 ## `sensor::drivers::Accelerometer` (ADXL345)
 
 **Header:** `include/drivers/accelerometer.hpp`  
-**Bus:** SPI (4-wire, Mode 11)  
+**Bus:** SPI (4-wire, Mode 00 or Mode 11)  
 **Device ID:** `0xE5`
 
 ### Enums

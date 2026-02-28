@@ -43,8 +43,8 @@ protected:
         0x18U, 0xFCU,
         // P1=36477 (0x8E7D) little-endian
         0x7DU, 0x8EU,
-        // P2=-10685 (0xD603) little-endian
-        0x03U, 0xD6U,
+        // P2=-10685 (0xD643) little-endian
+        0x43U, 0xD6U,
         // P3..P9: zero-fill
         0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U,
         0x00U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U,
@@ -71,6 +71,14 @@ protected:
     void expectSoftReset() {
         EXPECT_CALL(mock_, writeReg(ADDR, TemperatureSensor::RESET_REG, _, 1U))
             .WillOnce(Return(Status::Ok));
+    }
+
+    void expectStatusReady() {
+        EXPECT_CALL(mock_, readReg(ADDR, TemperatureSensor::STATUS_REG, _, 1U))
+            .WillOnce([](uint8_t, uint8_t, uint8_t* buf, size_t) {
+                buf[0] = 0x00U; // im_update = 0, NVM copy done
+                return Status::Ok;
+            });
     }
 
     void expectCalibrationRead() {
@@ -106,6 +114,7 @@ protected:
     void initSuccessfully() {
         expectChipIdRead();
         expectSoftReset();
+        expectStatusReady();
         expectCalibrationRead();
         expectCtrlHumWrite();
         expectConfigWrite();

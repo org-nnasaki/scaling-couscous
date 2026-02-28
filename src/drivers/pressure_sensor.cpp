@@ -42,6 +42,21 @@ Status PressureSensor::init() {
     st = bus_.writeReg(addr_, RESET_REG, &rst, 1U);
     if (st != Status::Ok) { return st; }
 
+    // Wait for NVM copy to complete (STATUS[0] = im_update must be 0)
+    // BMP280 NVM copy completes within 2 ms after reset (datasheet §4.1);
+    // 10 retries is a bounded safety guard for the polling loop.
+    {
+        constexpr int k_maxRetries = 10;
+        bool nvm_ready = false;
+        for (int i = 0; i < k_maxRetries; ++i) {
+            uint8_t s = 0U;
+            st = bus_.readReg(addr_, STATUS_REG, &s, 1U);
+            if (st != Status::Ok) { return st; }
+            if ((s & 0x01U) == 0U) { nvm_ready = true; break; }
+        }
+        if (!nvm_ready) { return Status::Timeout; }
+    }
+
     // 3. Read calibration data (0x88–0x9F, 24 bytes)
     st = readCalibration();
     if (st != Status::Ok) { return st; }
@@ -84,8 +99,11 @@ const char* PressureSensor::getName() { return "BMP280"; }
 Status PressureSensor::readTemperature(float& temperature) {
     if (!initialized_) { return Status::NotInitialized; }
 
+    Status st = waitForMeasurement();
+    if (st != Status::Ok) { return st; }
+
     uint8_t buf[3] = {};
-    Status st = bus_.readReg(addr_, 0xFAU, buf, 3U);
+    st = bus_.readReg(addr_, 0xFAU, buf, 3U);
     if (st != Status::Ok) { return st; }
 
     int32_t raw = parse20bit(buf[0], buf[1], buf[2]);
@@ -97,8 +115,11 @@ Status PressureSensor::readTemperature(float& temperature) {
 Status PressureSensor::readPressure(float& pressure) {
     if (!initialized_) { return Status::NotInitialized; }
 
+    Status st = waitForMeasurement();
+    if (st != Status::Ok) { return st; }
+
     uint8_t buf[6] = {};
-    Status st = bus_.readReg(addr_, DATA_REG, buf, 6U);
+    st = bus_.readReg(addr_, DATA_REG, buf, 6U);
     if (st != Status::Ok) { return st; }
 
     int32_t press_raw = parse20bit(buf[0], buf[1], buf[2]);
@@ -113,8 +134,11 @@ Status PressureSensor::readPressure(float& pressure) {
 Status PressureSensor::readBoth(float& temperature, float& pressure) {
     if (!initialized_) { return Status::NotInitialized; }
 
+    Status st = waitForMeasurement();
+    if (st != Status::Ok) { return st; }
+
     uint8_t buf[6] = {};
-    Status st = bus_.readReg(addr_, DATA_REG, buf, 6U);
+    st = bus_.readReg(addr_, DATA_REG, buf, 6U);
     if (st != Status::Ok) { return st; }
 
     int32_t press_raw = parse20bit(buf[0], buf[1], buf[2]);
@@ -126,6 +150,22 @@ Status PressureSensor::readBoth(float& temperature, float& pressure) {
     temperature = static_cast<float>(T) / 100.0f;
     pressure    = static_cast<float>(P) / 256.0f;
     return Status::Ok;
+}
+
+// ── Measurement-ready polling ─────────────────────────────────────────────
+
+Status PressureSensor::waitForMeasurement() {
+    // BMP280 worst-case measurement time is ~40 ms (datasheet §9.1);
+    // 10 retries is a bounded safety guard for the polling loop.
+    constexpr int k_maxRetries = 10;
+    bool meas_done = false;
+    for (int i = 0; i < k_maxRetries; ++i) {
+        uint8_t s = 0U;
+        Status st = bus_.readReg(addr_, STATUS_REG, &s, 1U);
+        if (st != Status::Ok) { return st; }
+        if ((s & 0x08U) == 0U) { meas_done = true; break; }
+    }
+    return meas_done ? Status::Ok : Status::Timeout;
 }
 
 // ── Calibration ───────────────────────────────────────────────────────────

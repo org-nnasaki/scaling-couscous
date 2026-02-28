@@ -72,6 +72,7 @@ private:
     int32_t         t_fine_{0};
 
     Status   readCalibration();
+    Status   waitForMeasurement();
     int32_t  compensateTemperature(int32_t adcT);
     uint32_t compensatePressure(int32_t adcP);
 };
