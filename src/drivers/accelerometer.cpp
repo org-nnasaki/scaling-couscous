@@ -101,7 +101,7 @@ Status Accelerometer::setRange(Range range) {
 // ── Private helpers ───────────────────────────────────────────────────────
 
 float Accelerometer::scaleFactor() const {
-    // FULL_RES mode: 3.9 mg/LSB ≈ 4 mg/LSB for all ranges
+    // FULL_RES mode: 3.9 mg/LSB for all ranges (rounded to 4 mg/LSB per spec)
     return 0.004f;
 }
 

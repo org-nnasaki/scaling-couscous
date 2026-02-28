@@ -1,0 +1,1 @@
+/tmp/codeql-scratch-b09dc38883dfa76d/dbs/cpp/working/autobuild/bin/c++ -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/test_temperature.dir/link.d CMakeFiles/test_temperature.dir/tests/test_temperature_sensor.cpp.o -o test_temperature  libsensor_drivers.a lib/libgtest_main.a lib/libgmock.a lib/libgtest.a

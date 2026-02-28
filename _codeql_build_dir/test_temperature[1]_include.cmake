@@ -1,0 +1,5 @@
+if(EXISTS "/home/runner/work/scaling-couscous/scaling-couscous/_codeql_build_dir/test_temperature[1]_tests.cmake")
+  include("/home/runner/work/scaling-couscous/scaling-couscous/_codeql_build_dir/test_temperature[1]_tests.cmake")
+else()
+  add_test(test_temperature_NOT_BUILT test_temperature_NOT_BUILT)
+endif()

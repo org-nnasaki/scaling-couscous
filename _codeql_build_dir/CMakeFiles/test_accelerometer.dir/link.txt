@@ -1,0 +1,1 @@
+/tmp/codeql-scratch-b09dc38883dfa76d/dbs/cpp/working/autobuild/bin/c++ -O3 -DNDEBUG -Wl,--dependency-file=CMakeFiles/test_accelerometer.dir/link.d CMakeFiles/test_accelerometer.dir/tests/test_accelerometer.cpp.o -o test_accelerometer  libsensor_drivers.a lib/libgtest_main.a lib/libgmock.a lib/libgtest.a

@@ -148,7 +148,7 @@ TEST_F(AccelerometerTest, ReadAcceleration_ZeroData_ReturnsZeroG) {
 
 TEST_F(AccelerometerTest, ReadAcceleration_PositiveX_CorrectScale) {
     initSuccessfully();
-    // raw X = 100 LSBs → 100 × 0.004 g = 0.4 g
+    // raw X = 100 LSBs → 100 × 0.0039 g/LSB ≈ 0.4 g (FULL_RES, 3.9 mg/LSB rounded to 4 mg/LSB)
     // little-endian: LSB=100 (0x64), MSB=0x00
     uint8_t raw[6] = {0x64U, 0x00U, 0x00U, 0x00U, 0x00U, 0x00U};
     EXPECT_CALL(mock_, readReg(Accelerometer::DATA_REG, _, 6U))

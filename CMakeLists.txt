@@ -52,3 +52,7 @@ if(BUILD_TESTS)
         sensor_drivers GTest::gtest_main GTest::gmock)
     gtest_discover_tests(test_pressure)
 endif()
+
+# ── Example executable ────────────────────────────────────────────────────
+add_executable(sensor_example examples/main.cpp)
+target_link_libraries(sensor_example PRIVATE sensor_drivers)
