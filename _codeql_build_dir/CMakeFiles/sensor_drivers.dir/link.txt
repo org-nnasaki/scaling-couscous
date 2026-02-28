@@ -1,2 +1,0 @@
-/usr/bin/ar qc libsensor_drivers.a CMakeFiles/sensor_drivers.dir/src/drivers/temperature_sensor.cpp.o CMakeFiles/sensor_drivers.dir/src/drivers/accelerometer.cpp.o CMakeFiles/sensor_drivers.dir/src/drivers/pressure_sensor.cpp.o
-/usr/bin/ranlib libsensor_drivers.a

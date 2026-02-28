@@ -1,5 +1,0 @@
-if(EXISTS "/home/runner/work/scaling-couscous/scaling-couscous/_codeql_build_dir/test_accelerometer[1]_tests.cmake")
-  include("/home/runner/work/scaling-couscous/scaling-couscous/_codeql_build_dir/test_accelerometer[1]_tests.cmake")
-else()
-  add_test(test_accelerometer_NOT_BUILT test_accelerometer_NOT_BUILT)
-endif()
